@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>チャージ＆ジャンプ！小数点マスター</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Zen+Maru+Gothic:wght@500;700;900&family=Klee+One:wght@600&display=swap');
+
+  :root {
+    --paper:       #fbf8f0;
+    --paper-2:     #f5f0e1;
+    --ink:         #2c3a4a;
+    --ink-soft:    #5a6878;
+    --grid:        #9dd4dc;
+    --grid-soft:   #cfeaee;
+    --line:        #c8d2dc;
+    --accent:      #f08a3e;
+    --accent-2:    #e85a4f;
+    --green:       #5a9f6b;
+    --blue:        #4a90c8;
+    --purple:      #8a6fb0;
+    --yellow:      #f5c842;
+    --maru-red:    #e63946;
+    --big-orange:  #f0772e;   /* 大きくなる＝右＝オレンジ/赤 */
+    --small-blue:  #3a86c8;   /* 小さくなる＝左＝青 */
+    --shadow:      rgba(44, 58, 74, 0.12);
+    --shadow-deep: rgba(44, 58, 74, 0.25);
+
+    --font-display: 'Zen Maru Gothic', sans-serif;
+    --font-hand:    'Klee One', 'Zen Maru Gothic', cursive;
+    --font-ui:      'Kosugi Maru', sans-serif;
+
+    --cell: 70px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font-ui);
+    color: var(--ink);
+    background: var(--paper);
+    user-select: none;
+    touch-action: manipulation;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(245, 200, 66, 0.08), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(74, 144, 200, 0.08), transparent 40%);
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+  .screen { position: fixed; inset: 0; display: none; }
+  .screen.active { display: flex; }
+
+  /* ===== TITLE ===== */
+  #titleScreen {
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 3vh 5vw; gap: 3vh; text-align: center;
+  }
+  .app-title {
+    font-family: var(--font-display); font-weight: 900;
+    font-size: clamp(2rem, 7vw, 3.4rem);
+    color: var(--ink); letter-spacing: 0.04em; line-height: 1.3;
+  }
+  .app-title .o { color: var(--big-orange); }
+  .app-title .b { color: var(--small-blue); }
+  .app-sub { font-size: clamp(1rem,3vw,1.3rem); color: var(--ink-soft); }
+  .point-mascot {
+    font-family: var(--font-display); font-weight: 900;
+    width: 1.6em; height: 1.6em; border-radius: 50%;
+    background: var(--yellow); color: var(--ink);
+    display: inline-flex; align-items: flex-end; justify-content: center;
+    font-size: clamp(2.5rem,9vw,4rem); box-shadow: 0 6px 0 var(--shadow-deep);
+    animation: bob 1.6s ease-in-out infinite;
+    padding-bottom: 0.12em;
+  }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+  .menu { display:flex; flex-direction:column; gap:1.4vh; width:min(90vw,420px); }
+  .menu-btn {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.1rem,3.5vw,1.5rem);
+    padding: 0.8em 1em; border-radius: 18px;
+    background: #fff; color: var(--ink);
+    box-shadow: 0 5px 0 var(--shadow-deep); border: 3px solid var(--line);
+    transition: transform 0.08s, box-shadow 0.08s; display:flex; align-items:center; gap:0.6em; justify-content:center;
+  }
+  .menu-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--shadow-deep); }
+  .menu-btn.big   { border-color: var(--big-orange); }
+  .menu-btn.small { border-color: var(--small-blue); }
+  .menu-btn.mix   { border-color: var(--purple); }
+  .menu-btn .ico { font-size: 1.3em; }
+
+  /* ===== GAME ===== */
+  #gameScreen { flex-direction: column; }
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 1.4vh 4vw; gap: 2vw;
+  }
+  .back-btn {
+    font-family: var(--font-display); font-weight:700; font-size: 1rem;
+    padding: 0.4em 0.9em; border-radius: 12px; background:#fff;
+    border: 2px solid var(--line); box-shadow: 0 3px 0 var(--shadow);
+  }
+  .back-btn:active { transform: translateY(2px); box-shadow:0 1px 0 var(--shadow); }
+  .progress { display:flex; gap:0.4em; }
+  .pip { width: 0.9em; height:0.9em; border-radius:50%; background: var(--line); transition: background 0.3s, transform 0.3s; }
+  .pip.done { background: var(--green); }
+  .pip.cur  { background: var(--yellow); transform: scale(1.25); }
+
+  .mode-tag {
+    font-family: var(--font-display); font-weight:700; font-size: 0.95rem;
+    padding: 0.3em 0.8em; border-radius: 999px; color:#fff;
+  }
+  .mode-tag.big   { background: var(--big-orange); }
+  .mode-tag.small { background: var(--small-blue); }
+
+  /* 問題提示エリア */
+  .question-area {
+    text-align:center; padding: 0.5vh 4vw 1vh;
+    font-family: var(--font-display); font-weight:900;
+    font-size: clamp(1.4rem, 5.5vw, 2.2rem); color: var(--ink);
+    min-height: 1.6em;
+  }
+  .question-area .q-op { color: var(--ink-soft); margin: 0 0.2em; }
+  .question-area .q-mul { color: var(--big-orange); }
+  .question-area .q-div { color: var(--small-blue); }
+  .question-area .zero-src {
+    display:inline-block; border-radius: 50%;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+  .question-area .zero-src.draggable {
+    cursor: grab; touch-action:none;
+    text-shadow: 0 0 0 transparent;
+    animation: zeroGlow 1.3s ease-in-out infinite;
+  }
+  @keyframes zeroGlow {
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.15); }
+  }
+  .question-area .zero-src.used { opacity: 0.2; animation:none; }
+
+  /* チャージメーター */
+  .charge-row {
+    display:flex; align-items:center; justify-content:center; gap:0.6em;
+    min-height: 2.2em; padding-bottom:0.5vh;
+  }
+  .charge-label { font-family:var(--font-display); font-weight:700; font-size:1rem; color:var(--ink-soft); }
+  .charge-slots { display:flex; gap:0.4em; }
+  .charge-slot {
+    width: 1.6em; height: 1.6em; border-radius: 8px;
+    border: 2px dashed var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:900; font-size:1.1rem;
+    color: #fff;
+  }
+  .charge-slot.filled.big   { background: var(--big-orange); border-style:solid; border-color:var(--big-orange); animation: pop 0.25s ease; }
+  .charge-slot.filled.small { background: var(--small-blue);  border-style:solid; border-color:var(--small-blue);  animation: pop 0.25s ease; }
+  @keyframes pop { 0%{transform:scale(0.3)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+  /* 方眼ステージ */
+  .stage-wrap { flex:1; position:relative; overflow:hidden; }
+  #stage {
+    position:absolute; left:50%; top:50%;
+    transform: translate(-50%,-50%);
+  }
+  .grid-bg {
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(var(--grid-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-soft) 1px, transparent 1px);
+    background-size: var(--cell) var(--cell);
+    z-index: 0;
+  }
+  .cell {
+    position:absolute; width: var(--cell); height: var(--cell);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--font-hand); font-weight:600;
+    font-size: calc(var(--cell) * 0.62); color: var(--ink);
+    z-index: 2;
+  }
+  .cell.faded { opacity: 0; }
+  .cell.appear { animation: cellPop 0.25s ease; }
+  @keyframes cellPop { 0%{transform:scale(0.4);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+  /* 空席アラート */
+  .empty-slot {
+    position:absolute; width: var(--cell); height: var(--cell);
+    border: 3px dashed var(--accent-2);
+    border-radius: 10px; z-index: 3;
+    display:flex; align-items:center; justify-content:center;
+    animation: alertPulse 0.9s ease-in-out infinite;
+    background: rgba(232,90,79,0.06);
+  }
+  @keyframes alertPulse {
+    0%,100%{ box-shadow: 0 0 0 0 rgba(232,90,79,0.4); }
+    50%{ box-shadow: 0 0 0 8px rgba(232,90,79,0); }
+  }
+  .empty-slot.filled {
+    border-style: solid; border-color: var(--green);
+    background: rgba(90,159,107,0.12); animation:none;
+  }
+
+  /* 小数点 */
+  .dpoint {
+    position:absolute; z-index: 5;
+    width: calc(var(--cell)*0.26); height: calc(var(--cell)*0.26);
+    border-radius:50%; background: var(--ink);
+    transition: left 0.18s cubic-bezier(.3,1.4,.5,1), background 0.2s, box-shadow 0.2s;
+  }
+  .dpoint.charged-big   { background: var(--big-orange); box-shadow: 0 0 0 6px rgba(240,119,46,0.25), 0 0 14px rgba(240,119,46,0.6); }
+  .dpoint.charged-small { background: var(--small-blue);  box-shadow: 0 0 0 6px rgba(58,134,200,0.25), 0 0 14px rgba(58,134,200,0.6); }
+  .dpoint.locked { animation: lockSnap 0.22s ease; }
+  @keyframes lockSnap {
+    0%   { transform: scale(1.5); }
+    50%  { transform: scale(0.82); }
+    100% { transform: scale(1); }
+  }
+
+  /* スワイプハンドル */
+  .swipe-handle {
+    position:absolute; z-index: 9; border-radius:50%;
+    background: rgba(232,90,79,0.14); border: 3px solid var(--accent-2);
+    cursor: grab; touch-action:none;
+  }
+  .swipe-handle.big   { border-color: var(--big-orange); background: rgba(240,119,46,0.14); }
+  .swipe-handle.small { border-color: var(--small-blue);  background: rgba(58,134,200,0.14); }
+  .swipe-handle:active { cursor:grabbing; }
+  .swipe-ghost {
+    position:absolute; z-index: 6; pointer-events:none;
+    font-weight:900; opacity:0.5;
+  }
+  .swipe-ghost.big   { color: var(--big-orange); animation: ghostR 1.1s ease-in-out infinite; }
+  .swipe-ghost.small { color: var(--small-blue);  animation: ghostL 1.1s ease-in-out infinite; }
+  @keyframes ghostR { 0%,100%{transform:translateX(0);opacity:0.35} 50%{transform:translateX(8px);opacity:0.65} }
+  @keyframes ghostL { 0%,100%{transform:translateX(0);opacity:0.35} 50%{transform:translateX(-8px);opacity:0.65} }
+
+  .jump-mark {
+    position:absolute; z-index:4; font-weight:900;
+    font-family:var(--font-display);
+    pointer-events:none; opacity:0;
+  }
+
+  /* ガイドふきだし */
+  .guide {
+    position:absolute; left:50%; bottom: 2vh; transform: translateX(-50%);
+    background: var(--ink); color:#fff;
+    font-family:var(--font-display); font-weight:700;
+    font-size: clamp(0.9rem,3vw,1.15rem);
+    padding: 0.7em 1.4em; border-radius: 16px;
+    box-shadow: 0 5px 14px var(--shadow-deep);
+    z-index: 30; max-width: 92vw; text-align:center;
+    transition: opacity 0.2s; white-space:nowrap;
+  }
+  .guide::after {
+    content:''; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%);
+    border: 9px solid transparent; border-top-color: var(--ink); border-bottom:0;
+  }
+  .guide.hide { opacity:0; pointer-events:none; }
+
+  /* 0補充パレット */
+  .zero-tray {
+    display:flex; align-items:center; justify-content:center; gap: 1.2em;
+    padding: 1.4vh 4vw 2.4vh;
+  }
+  .zero-tray.hidden { display:none; }
+  .zero-chip {
+    width: 2.4em; height: 2.4em; border-radius: 50%;
+    background: #fff; border: 3px solid var(--green);
+    font-family: var(--font-display); font-weight:900;
+    font-size: clamp(1.4rem,5vw,2rem); color: var(--green);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 4px 0 var(--shadow-deep);
+    cursor:grab; touch-action:none;
+    animation: chipBob 1.4s ease-in-out infinite;
+  }
+  @keyframes chipBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .zero-chip:active { cursor:grabbing; }
+  .zero-tray .tray-label {
+    font-family:var(--font-display); font-weight:700; color:var(--ink-soft);
+    font-size: clamp(0.9rem,3vw,1.1rem);
+  }
+
+  /* ドラッグ中のゴースト */
+  .drag-ghost {
+    position: fixed; z-index: 999; pointer-events:none;
+    font-family: var(--font-display); font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%; transform: translate(-50%,-50%) scale(1.15);
+  }
+
+  /* 正解オーバーレイ */
+  .result-overlay {
+    position:fixed; inset:0; z-index:50;
+    display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap: 2vh;
+    background: rgba(251,248,240,0.0);
+    pointer-events:none;
+  }
+  .result-overlay.show { display:flex; }
+  .maru {
+    width: 40vw; max-width: 240px; aspect-ratio:1;
+    border: 12px solid var(--maru-red); border-radius:50%;
+    animation: maruDraw 0.4s ease;
+  }
+  @keyframes maruDraw { 0%{transform:scale(0) rotate(-30deg); opacity:0} 100%{transform:scale(1) rotate(0); opacity:1} }
+  .result-text {
+    font-family:var(--font-display); font-weight:900;
+    font-size: clamp(1.6rem,6vw,2.6rem); color: var(--maru-red);
+  }
+  .next-btn {
+    pointer-events:auto;
+    font-family:var(--font-display); font-weight:700;
+    font-size: clamp(1.1rem,4vw,1.4rem);
+    padding: 0.7em 1.8em; border-radius: 16px;
+    background: var(--green); color:#fff;
+    box-shadow: 0 5px 0 #3f7a50; margin-top:1vh;
+  }
+  .next-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #3f7a50; }
+
+  /* 終了画面 */
+  #doneScreen { flex-direction:column; align-items:center; justify-content:center; gap:3vh; text-align:center; padding:5vw; }
+  .confetti { font-size: clamp(3rem,12vw,5rem); }
+
+  .nudge { animation: nudge 0.4s; }
+  @keyframes nudge { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+  .shake { animation: shake 0.45s; }
+</style>
+</head>
+<body>
+
+<!-- タイトル -->
+<div id="titleScreen" class="screen active">
+  <div class="point-mascot">.</div>
+  <h1 class="app-title">チャージ＆ジャンプ！<br><span class="o">小数点</span><span class="b">マスター</span></h1>
+  <p class="app-sub">小数点を　ジャンプさせて　答えを出そう！</p>
+  <div class="menu">
+    <button class="menu-btn big"   data-mode="big"><span class="ico">🚀</span>大きくする（10倍・100倍）</button>
+    <button class="menu-btn small" data-mode="small"><span class="ico">🪂</span>小さくする（1/10・1/100）</button>
+    <button class="menu-btn mix"   data-mode="mix"><span class="ico">🎯</span>ミックス（れんしゅう）</button>
+  </div>
+</div>
+
+<!-- ゲーム -->
+<div id="gameScreen" class="screen">
+  <div class="topbar">
+    <button class="back-btn" id="backBtn">‹ もどる</button>
+    <div class="progress" id="progress"></div>
+    <div class="mode-tag" id="modeTag">大きくする</div>
+  </div>
+
+  <div class="question-area" id="questionArea"></div>
+
+  <div class="charge-row">
+    <span class="charge-label" id="chargeLabel">チャージ</span>
+    <div class="charge-slots" id="chargeSlots"></div>
+  </div>
+
+  <div class="stage-wrap" id="stageWrap">
+    <div id="stage">
+      <div class="grid-bg" id="gridBg"></div>
+    </div>
+    <div class="guide hide" id="guide"></div>
+  </div>
+
+  <div class="zero-tray hidden" id="zeroTray">
+    <span class="tray-label">空席に０を入れよう →</span>
+    <div class="zero-chip" id="zeroChip">0</div>
+  </div>
+</div>
+
+<!-- 終了 -->
+<div id="doneScreen" class="screen">
+  <div class="confetti">🎉</div>
+  <h1 class="app-title" style="font-size:clamp(1.8rem,6vw,2.8rem)">ぜんもん クリア！</h1>
+  <p class="app-sub" id="doneMsg"></p>
+  <button class="menu-btn big" id="doneBack" style="width:min(80vw,360px)">タイトルへ もどる</button>
+</div>
+
+<!-- 正解オーバーレイ -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="maru"></div>
+  <div class="result-text">せいかい！</div>
+  <button class="next-btn" id="nextBtn">つぎへ →</button>
+</div>
+
+<script>
+/* ============================================================
+   チャージ＆ジャンプ！小数点マスター
+   ============================================================ */
+
+/* ---------- サウンド（WebAudio・シンプル合成音） ---------- */
+const Sound = (() => {
+  let ctx = null;
+  function ac(){ if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)(); return ctx; }
+  function tone(freq, dur, type='sine', vol=0.18, slideTo=null){
+    try{
+      const a = ac(); const t = a.currentTime;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t+0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+      o.connect(g); g.connect(a.destination);
+      o.start(t); o.stop(t+dur);
+    }catch(e){}
+  }
+  return {
+    charge(){ tone(520, 0.12, 'square', 0.10, 980); },      // シュッ
+    jump(big){ big ? tone(440,0.14,'triangle',0.16,760) : tone(620,0.14,'triangle',0.16,340); },
+    place(){ tone(700,0.10,'sine',0.14,900); },             // 0が座る
+    correct(){ tone(660,0.12,'sine',0.18); setTimeout(()=>tone(880,0.16,'sine',0.18),110); setTimeout(()=>tone(1100,0.2,'sine',0.18),240); },
+    bad(){ tone(180,0.18,'sawtooth',0.12,120); },
+    tap(){ tone(440,0.06,'sine',0.10); },
+  };
+})();
+
+/* ---------- 問題生成 ---------- */
+// value: 元の数(文字列), factor: 10|100, dir: 'big'|'small'
+function makeProblem(mode){
+  const factor = Math.random() < 0.5 ? 10 : 100;
+  let dir = mode;
+  if (mode === 'mix') dir = Math.random() < 0.5 ? 'big' : 'small';
+
+  // 元の数を作る：整数部1〜2桁 + 小数1〜2桁
+  const intLen = rand(1,2);
+  const decLen = rand(1,2);
+  let intPart = '';
+  intPart += rand(1,9);
+  if (intLen === 2) intPart += rand(0,9);
+  let decPart = '';
+  for (let i=0;i<decLen;i++) decPart += rand(i===decLen-1?1:0, 9);
+  // 末尾0を避ける
+  decPart = decPart.replace(/0+$/,'') || String(rand(1,9));
+  const value = intPart + '.' + decPart;
+
+  return { value, factor, dir };
+}
+function rand(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+
+/* ---------- グローバル状態 ---------- */
+const State = {
+  mode: 'big',
+  problems: [],
+  idx: 0,
+  total: 5,
+  cur: null,     // 現在の問題の作業状態
+};
+
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+
+/* 画面切替 */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ---------- タイトル ---------- */
+document.querySelectorAll('.menu-btn[data-mode]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ Sound.tap(); startGame(btn.dataset.mode); });
+});
+$('#backBtn').addEventListener('click', ()=>{ Sound.tap(); cleanupStage(); show('titleScreen'); });
+$('#doneBack').addEventListener('click', ()=>{ Sound.tap(); show('titleScreen'); });
+
+function startGame(mode){
+  State.mode = mode;
+  State.total = 5;
+  State.problems = [];
+  for(let i=0;i<State.total;i++) State.problems.push(makeProblem(mode));
+  State.idx = 0;
+  show('gameScreen');
+  // モードタグ
+  const tag = $('#modeTag');
+  if (mode==='big'){ tag.textContent='大きくする'; tag.className='mode-tag big'; }
+  else if (mode==='small'){ tag.textContent='小さくする'; tag.className='mode-tag small'; }
+  else { tag.textContent='ミックス'; tag.className='mode-tag big'; }
+  renderProgress();
+  loadProblem();
+}
+
+function renderProgress(){
+  const p = $('#progress'); p.innerHTML='';
+  for(let i=0;i<State.total;i++){
+    const d = document.createElement('div');
+    d.className = 'pip' + (i<State.idx?' done':'') + (i===State.idx?' cur':'');
+    p.appendChild(d);
+  }
+}
+
+/* ============================================================
+   1問のロード
+   ============================================================ */
+function getCell(){
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell'));
+}
+
+function cleanupStage(){
+  if (State.cur && State.cur._cleanup) State.cur._cleanup();
+  stage.querySelectorAll('.cell,.dpoint,.empty-slot,.swipe-handle,.swipe-ghost,.jump-mark').forEach(e=>e.remove());
+}
+
+function loadProblem(){
+  cleanupStage();
+  const prob = State.problems[State.idx];
+  const big = prob.dir === 'big';
+
+  // 桁分解
+  const [intStr, decStr] = prob.value.split('.');
+  const intDigits = intStr.split('');   // 例 ['1']
+  const decDigits = decStr.split('');   // 例 ['2']
+  const zeros = prob.factor === 100 ? 2 : 1;
+
+  // ----- レイアウト計算 -----
+  // 数字を一列に並べる。整数部 + 小数部。
+  // 列インデックス：0 から始める。各桁が1セル。
+  // 小数点は intDigits.length 桁目の「左境界」にある（整数部末尾と小数部先頭の間）。
+  // 移動後に左右へ広がる余白を確保する。
+  const padL = 3, padR = 3;
+  const digits = intDigits.concat(decDigits); // 表示順の数字（小数点除く）
+  const nDigit = digits.length;
+  // boundary 表記：境界 b は「列 b-1 と 列 b の間」。
+  // 数字は列 padL .. padL+nDigit-1 に置く。
+  // 初期の小数点境界（数字並びの中での境界 index, 0=先頭の左）
+  const pointBoundary0 = intDigits.length; // 数字並びの中での位置
+  // 全体の列数
+  const totalCols = padL + nDigit + padR;
+  const rows = 1;
+
+  // ----- セルサイズを画面に合わせて先に決定 -----
+  const wrap = $('#stageWrap');
+  const availW = (wrap.clientWidth || window.innerWidth) * 0.92;
+  const availH = (wrap.clientHeight || window.innerHeight*0.5) * 0.85;
+  let cellSize = Math.min(availW/totalCols, availH/(rows+1), 84);
+  cellSize = Math.max(cellSize, 38);
+  document.documentElement.style.setProperty('--cell', cellSize+'px');
+
+  const cell = getCell();
+  stage.style.width = (totalCols*cell)+'px';
+  stage.style.height = ((rows+1)*cell)+'px';
+
+  const cur = {
+    prob, big, zeros,
+    digits, intLen: intDigits.length, decLen: decDigits.length,
+    padL, nDigit, totalCols,
+    row: 0,
+    pointBoundary: pointBoundary0,   // 現在の小数点の境界（数字並び基準, 0..nDigit）
+    targetBoundary: big ? pointBoundary0 + zeros : pointBoundary0 - zeros,
+    moved: 0,
+    charged: 0,
+    cells: {},      // col -> element
+    emptySlots: [], // {col, el}
+    phase: 'charge',
+    _cleanup: null,
+  };
+  State.cur = cur;
+
+  // ----- 数字セルを描画 -----
+  const rowY = 0;
+  digits.forEach((d, i)=>{
+    const col = padL + i;
+    const el = document.createElement('div');
+    el.className = 'cell';
+    el.textContent = d;
+    el.style.left = (col*cell)+'px';
+    el.style.top  = (rowY*cell)+'px';
+    stage.appendChild(el);
+    cur.cells[col] = el;
+  });
+
+  // ----- 小数点を描画 -----
+  const dp = document.createElement('div');
+  dp.className = 'dpoint';
+  dp.id = 'dpoint';
+  positionPoint(dp, cur, cur.pointBoundary, cell);
+  stage.appendChild(dp);
+  cur.pointEl = dp;
+
+  // ----- チャージスロット -----
+  const slots = $('#chargeSlots'); slots.innerHTML='';
+  for(let i=0;i<zeros;i++){
+    const s = document.createElement('div');
+    s.className = 'charge-slot';
+    s.dataset.idx = i;
+    slots.appendChild(s);
+  }
+  $('#chargeLabel').textContent = big ? 'パワー' : 'パワー';
+
+  // ----- 問題文 -----
+  renderQuestion(cur);
+
+  // ----- 0トレイ非表示 -----
+  $('#zeroTray').classList.add('hidden');
+
+  renderProgress();
+
+  // ----- フェーズ開始：チャージ -----
+  startChargePhase(cur, cell);
+}
+
+// 小数点の位置：数字並びの境界 b → ステージ上のX
+function positionPoint(dp, cur, boundary, cell){
+  const cell2 = cell;
+  // 境界 b は列 (padL + b) の左端 = 数字 i=b のセルの左。
+  // 小数点は「直前の数字の右下」に置く。中心X = (padL+b)*cell の少し左。
+  const x = (cur.padL + boundary) * cell;
+  const sz = cell*0.26;
+  dp.style.width = sz+'px'; dp.style.height = sz+'px';
+  dp.style.left = (x - sz/2 - cell*0.06) + 'px';
+  dp.style.top  = ((cur.row+1)*cell - sz - cell*0.06) + 'px';
+}
+
+/* ---------- 問題文の描画（0がドラッグ可能） ---------- */
+function renderQuestion(cur){
+  const qa = $('#questionArea'); qa.innerHTML='';
+  const prob = cur.prob;
+  const big = cur.big;
+
+  // 「元の数」
+  const val = document.createElement('span');
+  val.textContent = prob.value;
+  qa.appendChild(val);
+
+  if (big){
+    // × 100
+    const op = document.createElement('span'); op.className='q-op q-mul'; op.textContent=' × ';
+    qa.appendChild(op);
+    appendFactor(qa, prob.factor, cur, 'big');
+  } else {
+    // 1/100 形式
+    const op = document.createElement('span'); op.className='q-op q-div'; op.textContent=' の ';
+    qa.appendChild(op);
+    const frac = document.createElement('span');
+    frac.style.cssText='display:inline-flex;flex-direction:column;align-items:center;line-height:1;vertical-align:middle;';
+    const one = document.createElement('span'); one.textContent='1'; one.style.fontSize='0.7em';
+    const bar = document.createElement('span'); bar.textContent=''; bar.style.cssText='width:1.6em;border-top:3px solid var(--small-blue);margin:0.1em 0;';
+    const denom = document.createElement('span');
+    denom.style.cssText='display:flex;font-size:0.7em;';
+    appendFactor(denom, prob.factor, cur, 'small');
+    frac.appendChild(one); frac.appendChild(bar); frac.appendChild(denom);
+    qa.appendChild(frac);
+  }
+  const eq = document.createElement('span'); eq.className='q-op'; eq.textContent=' = ';
+  qa.appendChild(eq);
+  const qmk = document.createElement('span'); qmk.textContent='？'; qmk.style.color='var(--ink-soft)';
+  qa.appendChild(qmk);
+}
+
+// 「100」を描画。0は個別ドラッグ可能要素にする。
+function appendFactor(parent, factor, cur, dir){
+  const str = String(factor); // "10" or "100"
+  for (const ch of str){
+    const sp = document.createElement('span');
+    sp.textContent = ch;
+    if (ch === '0'){
+      sp.className = 'zero-src';
+      sp.dataset.zero = '1';
+    }
+    parent.appendChild(sp);
+  }
+}
+
+/* ============================================================
+   フェーズ1：チャージ（問題文の0を小数点へドラッグ）
+   ============================================================ */
+function startChargePhase(cur, cell){
+  cur.phase = 'charge';
+  setGuide(cur.big
+    ? '「0」を　小数点（・）に　ドラッグしてチャージ！'
+    : '「0」を　小数点（・）に　ドラッグしてチャージ！');
+
+  const zeroEls = Array.from($('#questionArea').querySelectorAll('.zero-src'));
+  zeroEls.forEach(z => z.classList.add('draggable'));
+
+  let activeListeners = [];
+  function addL(t,ev,fn,o){ t.addEventListener(ev,fn,o); activeListeners.push([t,ev,fn,o]); }
+
+  zeroEls.forEach(zEl=>{
+    const onDown = (e)=>{
+      if (zEl.classList.contains('used')) return;
+      e.preventDefault();
+      startZeroDrag(e, zEl, cur, cell);
+    };
+    addL(zEl,'mousedown',onDown);
+    addL(zEl,'touchstart',onDown,{passive:false});
+  });
+
+  cur._chargeCleanup = ()=>{ activeListeners.forEach(([t,ev,fn,o])=>t.removeEventListener(ev,fn,o)); activeListeners=[]; };
+  cur._cleanup = ()=>{ if(cur._chargeCleanup)cur._chargeCleanup(); if(cur._swipeCleanup)cur._swipeCleanup(); };
+}
+
+function pointXY(e){
+  let t = e;
+  if (e.touches && e.touches.length)        t = e.touches[0];
+  else if (e.changedTouches && e.changedTouches.length) t = e.changedTouches[0];
+  return { x: t.clientX, y: t.clientY };
+}
+
+function startZeroDrag(e, zEl, cur, cell){
+  const {x,y} = pointXY(e);
+  // ゴースト生成
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.textContent = '0';
+  const sz = cell*0.7;
+  ghost.style.cssText += `width:${sz}px;height:${sz}px;font-size:${sz*0.7}px;`+
+    `color:#fff;background:${cur.big?'var(--big-orange)':'var(--small-blue)'};box-shadow:0 4px 12px var(--shadow-deep);`;
+  ghost.style.left = x+'px'; ghost.style.top = y+'px';
+  document.body.appendChild(ghost);
+
+  const dp = cur.pointEl;
+  function move(ev){
+    ev.preventDefault();
+    const p = pointXY(ev);
+    ghost.style.left=p.x+'px'; ghost.style.top=p.y+'px';
+    // 小数点に近いかハイライト
+    const r = dp.getBoundingClientRect();
+    const cx = r.left+r.width/2, cy = r.top+r.height/2;
+    const dist = Math.hypot(p.x-cx, p.y-cy);
+    dp.style.transform = dist < cell*0.9 ? 'scale(1.4)' : 'scale(1)';
+  }
+  function up(ev){
+    window.removeEventListener('mousemove',move);
+    window.removeEventListener('touchmove',move);
+    window.removeEventListener('mouseup',up);
+    window.removeEventListener('touchend',up);
+    const p = pointXY(ev);
+    const r = dp.getBoundingClientRect();
+    const cx = r.left+r.width/2, cy = r.top+r.height/2;
+    const dist = Math.hypot(p.x-cx, p.y-cy);
+    ghost.remove();
+    dp.style.transform='scale(1)';
+    if (dist < cell*1.1){
+      // チャージ成功
+      doCharge(zEl, cur, cell);
+    }
+  }
+  window.addEventListener('mousemove',move,{passive:false});
+  window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',up);
+  window.addEventListener('touchend',up);
+}
+
+function doCharge(zEl, cur, cell){
+  zEl.classList.add('used'); zEl.classList.remove('draggable');
+  cur.charged++;
+  Sound.charge();
+  // スロット点灯
+  const slot = $('#chargeSlots').querySelector(`.charge-slot[data-idx="${cur.charged-1}"]`);
+  if (slot){ slot.classList.add('filled', cur.big?'big':'small'); slot.textContent='0'; }
+  // 小数点を光らせる（0.2〜0.3秒のスピーディ演出）
+  const dp = cur.pointEl;
+  dp.classList.remove('charged-big','charged-small');
+  void dp.offsetWidth;
+  dp.classList.add(cur.big?'charged-big':'charged-small');
+
+  if (cur.charged >= cur.zeros){
+    // チャージ完了 → スワイプフェーズへ
+    if(cur._chargeCleanup) cur._chargeCleanup();
+    setTimeout(()=> startSwipePhase(cur, cell), 300);
+  }
+}
+
+/* ============================================================
+   フェーズ2：小数点スワイプ（big=右 / small=左）
+   ============================================================ */
+function startSwipePhase(cur, cell){
+  cur.phase = 'swipe';
+  const big = cur.big;
+  setGuide(cur.zeros >= 2
+    ? (big ? '小数点を　右へ　1マスずつ　2回スワイプ！🚀' : '小数点を　左へ　1マスずつ　2回スワイプ！🪂')
+    : (big ? '小数点を　右へ　1マス　ジャンプ！🚀' : '小数点を　左へ　1マス　ジャンプ！🪂'));
+
+  const dp = cur.pointEl;
+
+  // ハンドル
+  const handle = document.createElement('div');
+  handle.className = 'swipe-handle ' + (big?'big':'small');
+  const HS = cell*0.5;
+  handle.style.width=HS+'px'; handle.style.height=HS+'px';
+  stage.appendChild(handle);
+  cur.handleEl = handle;
+  positionHandle(handle, cur, cur.pointBoundary, cell, HS);
+
+  // ゴースト矢印
+  const ghost = document.createElement('div');
+  ghost.className = 'swipe-ghost ' + (big?'big':'small');
+  ghost.textContent = big ? '→' : '←';
+  ghost.style.fontSize = (cell*0.6)+'px';
+  positionGhost(ghost, cur, cell, big);
+  stage.appendChild(ghost);
+  cur.ghostEl = ghost;
+
+  let dragging=false, startX=0, baseBoundary=cur.pointBoundary;
+
+  function stepX(b){ return (cur.padL + b)*cell; } // 境界bの中心X(stage座標)
+
+  function down(e){ dragging=true; startX=pointXY(e).x; e.preventDefault(); }
+  function mv(e){
+    if(!dragging) return;
+    e.preventDefault();
+    const dx = pointXY(e).x - startX;
+    // 進める方向のみ受け付ける
+    let eff = big ? Math.max(0, dx) : Math.min(0, dx);
+    // 何マス進んだか（連続）
+    let absCells = Math.abs(eff / cell);
+    const sign = big ? 1 : -1;
+    // 1スワイプにつき1マスだけ。かつ残り必要マス数を超えない。
+    const remaining = Math.abs(cur.targetBoundary - baseBoundary);
+    absCells = Math.min(absCells, 1, remaining);
+    const liveBoundary = baseBoundary + sign*absCells;
+    // ハンドルと点を連続移動
+    const liveX = stepX(liveBoundary);
+    const sz = parseFloat(handle.style.width);
+    handle.style.transition='none';
+    handle.style.left = (liveX - sz/2 - cell*0.06)+'px';
+    dp.style.transition='none';
+    const dpsz = parseFloat(dp.style.width);
+    dp.style.left = (liveX - dpsz/2 - cell*0.06)+'px';
+
+    // 逆方向に引こうとしたら弾く演出
+    if ((big && dx < -cell*0.3) || (!big && dx > cell*0.3)){
+      handle.classList.add('nudge');
+      setTimeout(()=>handle.classList.remove('nudge'),400);
+      Sound.bad();
+      startX = pointXY(e).x; // リセット
+    }
+  }
+  function up(e){
+    if(!dragging) return;
+    dragging=false;
+    const dx = pointXY(e).x - startX;
+    let eff = big ? Math.max(0,dx) : Math.min(0,dx);
+    let cellsMoved = Math.abs(eff)/cell;
+    const sign = big?1:-1;
+    // 1スワイプ＝1マスのみ確定。半マス以上引いていれば1マス進む。
+    const remaining = Math.abs(cur.targetBoundary - baseBoundary);
+    let steps = (cellsMoved >= 0.5 && remaining >= 1) ? 1 : 0;
+    const newBoundary = baseBoundary + sign*steps;
+
+    dp.style.transition=''; handle.style.transition='left 0.18s';
+    if (steps >= 1){
+      // ジャンプ確定（1歩でも進めたら、足りない分は続けてスワイプ）
+      commitTo(newBoundary, baseBoundary, sign, cur, cell);
+      baseBoundary = newBoundary;
+    } else {
+      // 戻す
+      positionHandle(handle, cur, cur.pointBoundary, cell, parseFloat(handle.style.width));
+      positionPoint(dp, cur, cur.pointBoundary, cell);
+    }
+  }
+
+  handle.addEventListener('mousedown',down);
+  handle.addEventListener('touchstart',down,{passive:false});
+  window.addEventListener('mousemove',mv,{passive:false});
+  window.addEventListener('touchmove',mv,{passive:false});
+  window.addEventListener('mouseup',up);
+  window.addEventListener('touchend',up);
+
+  cur._swipeCleanup = ()=>{
+    window.removeEventListener('mousemove',mv);
+    window.removeEventListener('touchmove',mv);
+    window.removeEventListener('mouseup',up);
+    window.removeEventListener('touchend',up);
+    if(cur.ghostEl) cur.ghostEl.remove();
+  };
+}
+
+function positionHandle(handle, cur, boundary, cell, HS){
+  const x = (cur.padL+boundary)*cell;
+  handle.style.left = (x - HS/2 - cell*0.06)+'px';
+  // 数字行(row 0)の下のマスに置いて数字と重ならないようにする
+  handle.style.top  = ((cur.row+1)*cell + (cell - HS)/2)+'px';
+}
+function positionGhost(ghost, cur, cell, big){
+  const x = (cur.padL+cur.pointBoundary)*cell;
+  const off = big ? cell*0.45 : -cell*0.95;
+  ghost.style.left = (x+off)+'px';
+  // ハンドルと同じく数字行の下のマスに置く
+  ghost.style.top  = ((cur.row+1)*cell + cell*0.12)+'px';
+}
+
+// boundary を from→to に確定。1マスごとにジャンプ音＆飛んだ桁マーク。
+function commitTo(newBoundary, fromBoundary, sign, cur, cell){
+  const dp = cur.pointEl;
+  const handle = cur.handleEl;
+  // 1マス確定：ジャンプ音＋短いバイブでロック感を出す
+  Sound.jump(cur.big);
+  if (navigator.vibrate) navigator.vibrate(30);
+  positionPoint(dp, cur, newBoundary, cell);
+  positionHandle(handle, cur, newBoundary, cell, parseFloat(handle.style.width));
+  cur.pointBoundary = newBoundary;
+
+  // ロック演出（点をキュッと固定する明滅）
+  dp.classList.add('locked');
+  setTimeout(()=> dp.classList.remove('locked'), 220);
+
+  // ゴースト矢印更新
+  if (cur.ghostEl) positionGhost(cur.ghostEl, cur, cell, cur.big);
+
+  // 目標到達？
+  if (cur.pointBoundary === cur.targetBoundary){
+    // スワイプ終了
+    if (cur._swipeCleanup) cur._swipeCleanup();
+    if (cur.ghostEl){ cur.ghostEl.remove(); cur.ghostEl=null; }
+    if (cur.handleEl){ cur.handleEl.remove(); cur.handleEl=null; }
+    setTimeout(()=> startFillPhase(cur, cell), 250);
+  } else {
+    // まだ目標まで距離あり → もう一度スワイプを促す
+    const rem = Math.abs(cur.targetBoundary - cur.pointBoundary);
+    setGuide(`ロック！　あと${rem}マス　スワイプ！👆`);
+  }
+}
+
+/* ============================================================
+   フェーズ3：空席に0を補充
+   ============================================================ */
+function startFillPhase(cur, cell){
+  cur.phase = 'fill';
+  const big = cur.big;
+
+  // 空席の特定
+  // 移動後の小数点境界 = targetBoundary（数字並び基準）
+  // big の場合：右へ動いた → 末尾側に空席ができる。
+  //   元の数字は列 padL..padL+nDigit-1。新しい点は数字並び境界 targetBoundary。
+  //   targetBoundary > nDigit のとき、列 (padL+nDigit) .. (padL+targetBoundary-1) が空席。
+  // small の場合：左へ動いた → 先頭側＆点の右に空席。
+  //   targetBoundary < 0 のとき：一の位(列 padL-1 .. )などが空席になり、さらに0.先頭。
+  //   実際の答えは 0.0...digits。空席 = 点の左の一の位(1つ) ＋ 点の右で digits の前の空き。
+
+  const emptyCols = [];
+  if (big){
+    // 右移動：数字並びの末尾(nDigit)から targetBoundary までが空席
+    for (let b = cur.nDigit; b < cur.targetBoundary; b++){
+      emptyCols.push(cur.padL + b);
+    }
+  } else {
+    // 左移動：targetBoundary が 0以下のときだけ空席（補充の0）が発生する。
+    // targetBoundary >= 1 の場合は小数点が既存の数字の間に収まるので空席なし。
+    if (cur.targetBoundary <= 0){
+      // 点の右側の0（小数第n位までの0）：列 padL+targetBoundary .. padL-1
+      for (let b = cur.targetBoundary; b < 0; b++){
+        emptyCols.push(cur.padL + b);
+      }
+      // 一の位の0（点のすぐ左の桁）
+      emptyCols.push(cur.padL + cur.targetBoundary - 1);
+    }
+  }
+  // 整理：左から右
+  emptyCols.sort((a,b)=>a-b);
+
+  // 空席ボックスを描画
+  cur.emptySlots = [];
+  emptyCols.forEach(col=>{
+    const el = document.createElement('div');
+    el.className = 'empty-slot';
+    el.style.left = (col*cell)+'px';
+    el.style.top  = (cur.row*cell)+'px';
+    el.dataset.col = col;
+    stage.appendChild(el);
+    cur.emptySlots.push({col, el, filled:false});
+  });
+
+  if (cur.emptySlots.length === 0){
+    // 空席なし（理屈上発生しにくいが）→ 完成チェック
+    finishProblem(cur, cell);
+    return;
+  }
+
+  setGuide(big
+    ? '空っぽのマスに「0」を入れよう！（留守番の0）'
+    : '空っぽのマスに「0」を入れよう！一の位の0も忘れずに！');
+
+  // 0トレイ表示
+  $('#zeroTray').classList.remove('hidden');
+  const chip = $('#zeroChip');
+
+  // 既存リスナを置き換えるためクローン
+  const newChip = chip.cloneNode(true);
+  chip.parentNode.replaceChild(newChip, chip);
+
+  function onDown(e){ e.preventDefault(); startZeroFillDrag(e, newChip, cur, cell); }
+  newChip.addEventListener('mousedown', onDown);
+  newChip.addEventListener('touchstart', onDown, {passive:false});
+
+  cur._fillCleanup = ()=>{
+    newChip.removeEventListener('mousedown',onDown);
+    newChip.removeEventListener('touchstart',onDown);
+  };
+  const prevCleanup = cur._cleanup;
+  cur._cleanup = ()=>{ if(prevCleanup)prevCleanup(); if(cur._fillCleanup)cur._fillCleanup(); };
+}
+
+function startZeroFillDrag(e, chip, cur, cell){
+  const {x,y} = pointXY(e);
+  const ghost = document.createElement('div');
+  ghost.className='drag-ghost';
+  ghost.textContent='0';
+  const sz=cell*0.7;
+  ghost.style.cssText += `width:${sz}px;height:${sz}px;font-size:${sz*0.7}px;color:#fff;background:var(--green);box-shadow:0 4px 12px var(--shadow-deep);`;
+  ghost.style.left=x+'px'; ghost.style.top=y+'px';
+  document.body.appendChild(ghost);
+
+  function move(ev){
+    ev.preventDefault();
+    const p=pointXY(ev);
+    ghost.style.left=p.x+'px'; ghost.style.top=p.y+'px';
+    // ハイライト：最も近い空席
+    cur.emptySlots.forEach(s=>{
+      if(s.filled) return;
+      const r=s.el.getBoundingClientRect();
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const near = Math.hypot(p.x-cx,p.y-cy) < cell*0.7;
+      s.el.style.transform = near?'scale(1.12)':'scale(1)';
+    });
+  }
+  function up(ev){
+    window.removeEventListener('mousemove',move);
+    window.removeEventListener('touchmove',move);
+    window.removeEventListener('mouseup',up);
+    window.removeEventListener('touchend',up);
+    const p = pointXY(ev);
+    ghost.remove();
+    // 最も近い未充填空席へ
+    let best=null, bestD=Infinity;
+    cur.emptySlots.forEach(s=>{
+      if(s.filled) return;
+      const r=s.el.getBoundingClientRect();
+      const cx=r.left+r.width/2, cy=r.top+r.height/2;
+      const d=Math.hypot(p.x-cx,p.y-cy);
+      if(d<bestD){bestD=d; best=s;}
+      s.el.style.transform='scale(1)';
+    });
+    if (best && bestD < cell*0.95){
+      fillSlot(best, cur, cell);
+    }
+  }
+  window.addEventListener('mousemove',move,{passive:false});
+  window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',up);
+  window.addEventListener('touchend',up);
+}
+
+function fillSlot(slot, cur, cell){
+  slot.filled = true;
+  slot.el.classList.add('filled');
+  slot.el.style.transform='scale(1)';
+  Sound.place();
+  // 0の数字を描画
+  const z = document.createElement('div');
+  z.className='cell appear';
+  z.textContent='0';
+  z.style.left=(slot.col*cell)+'px';
+  z.style.top=(cur.row*cell)+'px';
+  z.style.color='var(--green)';
+  stage.appendChild(z);
+  cur.cells[slot.col]=z;
+
+  // 全部埋まったか
+  if (cur.emptySlots.every(s=>s.filled)){
+    setTimeout(()=> finishProblem(cur, cell), 300);
+  }
+}
+
+/* ============================================================
+   問題完了 → 正解演出
+   ============================================================ */
+function buildAnswerString(cur){
+  // 完成した数字列を読み取り
+  const cols = Object.keys(cur.cells).map(Number).sort((a,b)=>a-b);
+  // 小数点境界（列基準）
+  const pointCol = cur.padL + cur.targetBoundary; // 点はこの列の左にある
+  let s = '';
+  cols.forEach(col=>{
+    if (col === pointCol) s += '.';
+    s += cur.cells[col].textContent;
+  });
+  // 点が末尾（整数化）の場合は付けない。点が先頭なら 0. を補う形になっている想定。
+  if (pointCol > cols[cols.length-1]) {/* 点は最後 → 整数。何もしない */}
+  if (pointCol <= cols[0]) { if(!s.startsWith('.')) {} s = s; }
+  // 先頭が '.' の場合は 0 を補完表示
+  if (s.startsWith('.')) s = '0'+s;
+  // 末尾不要な点除去
+  s = s.replace(/\.$/,'');
+  return s;
+}
+
+function finishProblem(cur, cell){
+  cur.phase='done';
+  if (cur._fillCleanup) cur._fillCleanup();
+  $('#zeroTray').classList.add('hidden');
+  hideGuide();
+
+  const ans = buildAnswerString(cur);
+  // 問題文の「？」を答えに
+  const qa = $('#questionArea');
+  // 末尾要素（？）を答えに置換
+  qa.lastChild.textContent = ans;
+  qa.lastChild.style.color = cur.big ? 'var(--big-orange)' : 'var(--small-blue)';
+
+  Sound.correct();
+  setTimeout(()=>{
+    $('#resultOverlay').classList.add('show');
+  }, 400);
+}
+
+$('#nextBtn').addEventListener('click', ()=>{
+  Sound.tap();
+  $('#resultOverlay').classList.remove('show');
+  State.idx++;
+  if (State.idx >= State.total){
+    // 完了
+    const labels = {big:'「大きくする」', small:'「小さくする」', mix:'「ミックス」'};
+    $('#doneMsg').textContent = `${labels[State.mode]} 5もん　ぜんぶ　できたね！`;
+    show('doneScreen');
+  } else {
+    loadProblem();
+  }
+});
+
+/* ---------- ガイド ---------- */
+function setGuide(t){ const g=$('#guide'); g.textContent=t; g.classList.remove('hide'); }
+function hideGuide(){ $('#guide').classList.add('hide'); }
+
+/* ---------- セルサイズをレスポンシブ調整 ---------- */
+function fitCell(){
+  const wrap = $('#stageWrap');
+  if (!wrap) return;
+  const cur = State.cur;
+  if (!cur){ return; }
+  const availW = wrap.clientWidth * 0.94;
+  const availH = wrap.clientHeight * 0.9;
+  const cellW = availW / cur.totalCols;
+  const cellH = availH / 2;
+  let cell = Math.min(cellW, cellH, 84);
+  cell = Math.max(cell, 40);
+  document.documentElement.style.setProperty('--cell', cell+'px');
+  // 再レイアウト（簡易：再ロードはせず位置だけ更新は複雑なので、フェーズ途中の resize は次問題で反映）
+}
+window.addEventListener('resize', ()=>{ /* 単純化：実行中は据え置き */ });
+
+/* 初期：タイトル表示済み */
+</script>
+</body>
+</html>
