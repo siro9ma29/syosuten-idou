@@ -68,6 +68,12 @@
   .app-title .o { color: var(--big-orange); }
   .app-title .b { color: var(--small-blue); }
   .app-sub { font-size: clamp(1rem,3vw,1.3rem); color: var(--ink-soft); }
+  .app-version {
+    position: fixed; right: 10px; bottom: 8px;
+    font-family: var(--font-ui); font-size: 0.75rem;
+    color: var(--ink-soft); opacity: 0.7; z-index: 40;
+    pointer-events: none;
+  }
   .point-mascot {
     font-family: var(--font-display); font-weight: 900;
     width: 1.6em; height: 1.6em; border-radius: 50%;
@@ -338,6 +344,7 @@
   <div class="point-mascot">.</div>
   <h1 class="app-title">チャージ＆ジャンプ！<br><span class="o">小数点</span><span class="b">マスター</span></h1>
   <p class="app-sub">小数点を　ジャンプさせて　答えを出そう！</p>
+  <div class="app-version">v1.1.0</div>
   <div class="menu">
     <button class="menu-btn big"   data-mode="big"><span class="ico">🚀</span>大きくする（10倍・100倍）</button>
     <button class="menu-btn small" data-mode="small"><span class="ico">🪂</span>小さくする（1/10・1/100）</button>
@@ -973,8 +980,8 @@ function startFillPhase(cur, cell){
   }
 
   setGuide(big
-    ? '空っぽのマスに「0」を入れよう！（留守番の0）'
-    : '空っぽのマスに「0」を入れよう！一の位の0も忘れずに！');
+    ? '右はしのマスから　じゅんに「0」を入れよう！（留守番の0）'
+    : '右はしのマスから　じゅんに「0」を入れよう！一の位の0も忘れずに！');
 
   // 0トレイ表示
   $('#zeroTray').classList.remove('hidden');
@@ -1006,18 +1013,28 @@ function startZeroFillDrag(e, chip, cur, cell){
   ghost.style.left=x+'px'; ghost.style.top=y+'px';
   document.body.appendChild(ghost);
 
+  // 右端の未充填スロットだけが受け付け対象
+  function rightmostOpen(){
+    let target=null;
+    cur.emptySlots.forEach(s=>{
+      if(s.filled) return;
+      if(!target || s.col > target.col) target=s;
+    });
+    return target;
+  }
   function move(ev){
     ev.preventDefault();
     const p=pointXY(ev);
     ghost.style.left=p.x+'px'; ghost.style.top=p.y+'px';
-    // ハイライト：最も近い空席
-    cur.emptySlots.forEach(s=>{
-      if(s.filled) return;
-      const r=s.el.getBoundingClientRect();
+    // ハイライト：右端の未充填スロットのみ
+    const target = rightmostOpen();
+    cur.emptySlots.forEach(s=>{ if(!s.filled) s.el.style.transform='scale(1)'; });
+    if (target){
+      const r=target.el.getBoundingClientRect();
       const cx=r.left+r.width/2, cy=r.top+r.height/2;
       const near = Math.hypot(p.x-cx,p.y-cy) < cell*0.7;
-      s.el.style.transform = near?'scale(1.12)':'scale(1)';
-    });
+      target.el.style.transform = near?'scale(1.12)':'scale(1)';
+    }
   }
   function up(ev){
     window.removeEventListener('mousemove',move);
@@ -1026,18 +1043,28 @@ function startZeroFillDrag(e, chip, cur, cell){
     window.removeEventListener('touchend',up);
     const p = pointXY(ev);
     ghost.remove();
-    // 最も近い未充填空席へ
-    let best=null, bestD=Infinity;
-    cur.emptySlots.forEach(s=>{
-      if(s.filled) return;
-      const r=s.el.getBoundingClientRect();
-      const cx=r.left+r.width/2, cy=r.top+r.height/2;
-      const d=Math.hypot(p.x-cx,p.y-cy);
-      if(d<bestD){bestD=d; best=s;}
-      s.el.style.transform='scale(1)';
-    });
-    if (best && bestD < cell*0.95){
-      fillSlot(best, cur, cell);
+    cur.emptySlots.forEach(s=>{ if(!s.filled) s.el.style.transform='scale(1)'; });
+    // 右端の未充填スロットにドロップしたときだけ受け付ける
+    const target = rightmostOpen();
+    if (!target) return;
+    const r=target.el.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    if (Math.hypot(p.x-cx,p.y-cy) < cell*0.95){
+      fillSlot(target, cur, cell);
+    } else {
+      // 右端以外の空席を狙っていたら弾く
+      let near=null, nd=Infinity;
+      cur.emptySlots.forEach(s=>{
+        if(s.filled) return;
+        const rr=s.el.getBoundingClientRect();
+        const dd=Math.hypot(p.x-(rr.left+rr.width/2), p.y-(rr.top+rr.height/2));
+        if(dd<nd){nd=dd; near=s;}
+      });
+      if (near && near!==target && nd < cell*0.95){
+        target.el.classList.add('shake');
+        setTimeout(()=>target.el.classList.remove('shake'),450);
+        Sound.bad();
+      }
     }
   }
   window.addEventListener('mousemove',move,{passive:false});
